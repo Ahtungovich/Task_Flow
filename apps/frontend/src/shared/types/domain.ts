@@ -26,6 +26,48 @@ export interface UserProfile {
   updatedAt: string;
 }
 
+export interface ProjectUserSummary {
+  id: string;
+  email: string;
+  username: string;
+  fullName: string;
+  avatar: string | null;
+  accountType: AccountType;
+}
+
+export interface ProjectMemberItem {
+  id: string;
+  projectId: string;
+  userId: string;
+  role: ProjectRole;
+  joinedAt: string;
+  user: ProjectUserSummary;
+}
+
+export interface ProjectSummary {
+  id: string;
+  name: string;
+  description: string;
+  creatorId: string;
+  leaderId: string;
+  startDate: string | null;
+  endDate: string | null;
+  status: ProjectStatus;
+  createdAt: string;
+  updatedAt: string;
+  myRole: ProjectRole;
+  leader: ProjectUserSummary;
+  _count?: {
+    memberships: number;
+    tasks: number;
+  };
+}
+
+export interface ProjectDetails extends ProjectSummary {
+  creator: ProjectUserSummary;
+  memberships: ProjectMemberItem[];
+}
+
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   NEW: 'Новая',
   IN_PROGRESS: 'В работе',

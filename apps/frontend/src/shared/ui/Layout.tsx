@@ -54,6 +54,10 @@ export function Layout({ children }: { children: ReactNode }) {
                   <LayoutDashboard className="h-4 w-4" />
                   Личный кабинет
                 </NavLink>
+                <NavLink to="/projects" className={navLinkClass}>
+                  <FolderKanban className="h-4 w-4" />
+                  Проекты
+                </NavLink>
                 <NavLink to="/profile" className={navLinkClass}>
                   <UserCircle2 className="h-4 w-4" />
                   Профиль
@@ -97,7 +101,6 @@ export function Layout({ children }: { children: ReactNode }) {
             )}
           </div>
 
-          {/* Mobile menu toggle */}
           <button
             type="button"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
@@ -112,7 +115,6 @@ export function Layout({ children }: { children: ReactNode }) {
           </button>
         </div>
 
-        {/* Mobile navigation drawer */}
         {mobileMenuOpen && (
           <div className="border-t border-slate-200 bg-white px-4 py-3 md:hidden">
             {isAuthenticated && user ? (
@@ -142,12 +144,20 @@ export function Layout({ children }: { children: ReactNode }) {
                     Личный кабинет
                   </NavLink>
                   <NavLink
+                    to="/projects"
+                    className={navLinkClass}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <FolderKanban className="h-4 w-4" />
+                    Проекты
+                  </NavLink>
+                  <NavLink
                     to="/profile"
                     className={navLinkClass}
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <UserCircle2 className="h-4 w-4" />
-                    Профиль и безопасность
+                    Профиль
                   </NavLink>
                 </nav>
                 <Button
@@ -185,7 +195,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <FolderKanban className="h-3.5 w-3.5" />
             {APP_CONFIG.appName} — система совместного планирования учебных проектов
           </span>
-          <span>Этап 2 · Регистрация, авторизация и профиль</span>
+          <span>Этап 3 · Проекты, участники и ролевая модель</span>
         </div>
       </footer>
     </div>
