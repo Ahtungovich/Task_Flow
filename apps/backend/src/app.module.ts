@@ -2,9 +2,12 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { AuthModule } from './auth/auth.module';
+import { SessionAuthGuard } from './common/guards/session-auth.guard';
 import { validateEnv } from './config/env.validation';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -20,12 +23,18 @@ import { PrismaModule } from './prisma/prisma.module';
       },
     ]),
     PrismaModule,
+    AuthModule,
+    UsersModule,
     HealthModule,
   ],
   providers: [
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: SessionAuthGuard,
     },
   ],
 })

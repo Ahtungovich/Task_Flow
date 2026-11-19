@@ -12,6 +12,20 @@ export type TaskStatus =
 
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
+export interface UserProfile {
+  id: string;
+  email: string;
+  username: string;
+  fullName: string;
+  avatar: string | null;
+  accountType: AccountType;
+  isTeacherVerified: boolean;
+  emailVerified: boolean;
+  isBlocked: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   NEW: 'Новая',
   IN_PROGRESS: 'В работе',
