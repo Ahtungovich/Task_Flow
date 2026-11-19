@@ -1,0 +1,17 @@
+{
+  "name": "taskflow-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TaskFlow — веб-приложение для совместного планирования задач и управления учебными проектами",
+  "scripts": {
+    "install:all": "npm --prefix apps/backend install && npm --prefix apps/frontend install",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "prisma:generate": "npm --prefix apps/backend run prisma:generate",
+    "prisma:migrate": "npm --prefix apps/backend run prisma:migrate",
+    "dev:backend": "npm --prefix apps/backend run start:dev",
+    "dev:frontend": "npm --prefix apps/frontend run dev",
+    "build:backend": "npm --prefix apps/backend run build",
+    "build:frontend": "npm --prefix apps/frontend run build"
+  }
+}
