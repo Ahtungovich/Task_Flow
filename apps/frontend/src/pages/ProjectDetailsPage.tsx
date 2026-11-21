@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Calendar,
   Crown,
+  Info,
   KanbanSquare,
   Settings2,
   ShieldAlert,
@@ -14,6 +15,7 @@ import {
 import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { projectsApi } from '../features/projects/projectsApi';
+import { ProjectTasksBoard } from '../features/tasks/ProjectTasksBoard';
 import { ApiError } from '../shared/api/client';
 import {
   ACCOUNT_TYPE_LABELS,
@@ -39,9 +41,9 @@ export function ProjectDetailsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'members' | 'settings'>(
-    'overview',
-  );
+  const [activeTab, setActiveTab] = useState<
+    'board' | 'overview' | 'members' | 'settings'
+  >('board');
 
   // Форма добавления участника
   const [identifier, setIdentifier] = useState('');
@@ -296,6 +298,19 @@ export function ProjectDetailsPage() {
       <div className="flex flex-wrap gap-1 border-b border-slate-200 pb-2">
         <button
           type="button"
+          onClick={() => setActiveTab('board')}
+          className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'board'
+              ? 'bg-slate-900 text-white'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <KanbanSquare className="h-4 w-4" />
+          Доска задач
+        </button>
+
+        <button
+          type="button"
           onClick={() => setActiveTab('overview')}
           className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
             activeTab === 'overview'
@@ -303,8 +318,7 @@ export function ProjectDetailsPage() {
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          <KanbanSquare className="h-4 w-4" />
-          Обзор и задачи
+          <Info className="h-4 w-4" />О проекте
         </button>
 
         <button
@@ -336,7 +350,16 @@ export function ProjectDetailsPage() {
         )}
       </div>
 
-      {/* Вкладка 1: Обзор */}
+      {/* Вкладка 1: Канбан-доска и список задач */}
+      {activeTab === 'board' && (
+        <ProjectTasksBoard
+          projectId={project.id}
+          myRole={project.myRole}
+          members={project.memberships}
+        />
+      )}
+
+      {/* Вкладка 2: Обзор проекта */}
       {activeTab === 'overview' && (
         <div className="grid gap-6 lg:grid-cols-3">
           <Card className="p-5 lg:col-span-2">
@@ -346,19 +369,6 @@ export function ProjectDetailsPage() {
             <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-700">
               {project.description || 'Описание проекта пока не добавлено.'}
             </p>
-
-            <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-slate-900">
-                <KanbanSquare className="h-4 w-4 text-slate-700" />
-                Канбан-доска и задачи проекта
-              </div>
-              <p className="mt-1 text-xs text-slate-600">
-                Модуль создания задач и канбан-доска с 6 статусами будут
-                подключены на следующих этапах (Этапы 4–5). Ваша текущая роль в
-                проекте:{' '}
-                <strong>{PROJECT_ROLE_LABELS[project.myRole]}</strong>.
-              </p>
-            </div>
           </Card>
 
           <Card className="space-y-4 p-5">
@@ -398,7 +408,7 @@ export function ProjectDetailsPage() {
         </div>
       )}
 
-      {/* Вкладка 2: Участники и роли */}
+      {/* Вкладка 3: Участники и роли */}
       {activeTab === 'members' && (
         <div className="space-y-6">
           {isLeader && (
@@ -556,7 +566,7 @@ export function ProjectDetailsPage() {
         </div>
       )}
 
-      {/* Вкладка 3: Управление проектом (только руководитель) */}
+      {/* Вкладка 4: Управление проектом (только руководитель) */}
       {activeTab === 'settings' && isLeader && (
         <div className="space-y-6">
           <Card className="p-5 sm:p-6">
