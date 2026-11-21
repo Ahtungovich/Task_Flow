@@ -68,6 +68,44 @@ export interface ProjectDetails extends ProjectSummary {
   memberships: ProjectMemberItem[];
 }
 
+export interface ProjectLabel {
+  id: string;
+  projectId: string;
+  name: string;
+  color: string;
+  createdAt: string;
+}
+
+export interface TaskItem {
+  id: string;
+  projectId: string;
+  authorId: string;
+  assigneeId: string | null;
+  title: string;
+  description: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  position: number;
+  startDate: string | null;
+  deadline: string | null;
+  isOverdue: boolean;
+  createdAt: string;
+  updatedAt: string;
+  author: ProjectUserSummary;
+  assignee: ProjectUserSummary | null;
+  labels: ProjectLabel[];
+  commentsCount: number;
+}
+
+export const TASK_STATUSES_ORDER: TaskStatus[] = [
+  'NEW',
+  'IN_PROGRESS',
+  'IN_REVIEW',
+  'DONE',
+  'BLOCKED',
+  'POSTPONED',
+];
+
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   NEW: 'Новая',
   IN_PROGRESS: 'В работе',
