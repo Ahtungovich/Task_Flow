@@ -21,3 +21,4 @@ apps/frontend/.env
 
 # Uploads (reserved for later stages)
 uploads/
+.venv/
