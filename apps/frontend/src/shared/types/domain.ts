@@ -107,6 +107,22 @@ export interface TaskItem {
   commentsCount: number;
 }
 
+export interface MyTaskItem extends TaskItem {
+  project: {
+    id: string;
+    name: string;
+    status: ProjectStatus;
+  };
+}
+
+export interface MyTasksStats {
+  total: number;
+  active: number;
+  inProgress: number;
+  done: number;
+  overdue: number;
+}
+
 export const TASK_STATUSES_ORDER: TaskStatus[] = [
   'NEW',
   'IN_PROGRESS',

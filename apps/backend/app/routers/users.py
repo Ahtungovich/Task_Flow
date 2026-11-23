@@ -1,11 +1,22 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models import User
-from app.schemas import ChangePasswordRequest, UpdateProfileRequest, serialize_user
+from app.models import (
+    ProjectMembership,
+    Task,
+    TaskLabel,
+    TaskStatus,
+    User,
+)
+from app.schemas import (
+    ChangePasswordRequest,
+    UpdateProfileRequest,
+    serialize_my_task,
+    serialize_user,
+)
 from app.security import hash_password, verify_password
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -80,3 +91,55 @@ def change_password(
     db.commit()
 
     return {"success": True}
+
+
+@router.get("/me/tasks")
+def get_my_tasks(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    # собираем все активные задачи из всех проектов где текущий пользователь назначен исполнителем
+    stmt = (
+        select(Task)
+        .join(
+            ProjectMembership,
+            (ProjectMembership.project_id == Task.project_id)
+            & (ProjectMembership.user_id == current_user.id),
+        )
+        .options(
+            joinedload(Task.project),
+            joinedload(Task.author),
+            joinedload(Task.assignee),
+            joinedload(Task.task_labels).joinedload(TaskLabel.label),
+            joinedload(Task.comments),
+        )
+        .where(
+            Task.assignee_id == current_user.id,
+            Task.deleted_at.is_(None),
+        )
+        .order_by(Task.deadline.asc().nullslast(), Task.created_at.desc())
+    )
+    tasks = db.execute(stmt).unique().scalars().all()
+
+    serialized_tasks = [serialize_my_task(t) for t in tasks]
+
+    # считаем сводную статистику по задачам для карточек в личном кабинете
+    total_count = len(serialized_tasks)
+    done_count = sum(1 for t in tasks if t.status == TaskStatus.DONE)
+    in_progress_count = sum(
+        1
+        for t in tasks
+        if t.status in (TaskStatus.IN_PROGRESS, TaskStatus.IN_REVIEW)
+    )
+    overdue_count = sum(1 for item in serialized_tasks if item["isOverdue"])
+
+    return {
+        "tasks": serialized_tasks,
+        "stats": {
+            "total": total_count,
+            "active": total_count - done_count,
+            "inProgress": in_progress_count,
+            "done": done_count,
+            "overdue": overdue_count,
+        },
+    }

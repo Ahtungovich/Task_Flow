@@ -11,7 +11,8 @@ import {
   Trash2,
   User,
 } from 'lucide-react';
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ApiError } from '../../shared/api/client';
 import {
   ProjectMemberItem,
@@ -53,6 +54,7 @@ export function ProjectTasksBoard({
 }: ProjectTasksBoardProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const isLeader = myRole === 'LEADER';
   const canCreateTask = myRole === 'LEADER' || myRole === 'MEMBER';
@@ -137,6 +139,13 @@ export function ProjectTasksBoard({
   });
 
   const tasks = tasksQuery.data?.tasks ?? [];
+
+  useEffect(() => {
+    const taskIdFromUrl = searchParams.get('taskId');
+    if (taskIdFromUrl && tasks.some((t) => t.id === taskIdFromUrl)) {
+      setSelectedTaskId(taskIdFromUrl);
+    }
+  }, [searchParams, tasks]);
   const labels = labelsQuery.data?.labels ?? [];
 
   const filteredTasks = useMemo(() => {
@@ -704,7 +713,14 @@ export function ProjectTasksBoard({
           myRole={myRole}
           members={members}
           labels={labels}
-          onClose={() => setSelectedTaskId(null)}
+          onClose={() => {
+            setSelectedTaskId(null);
+            if (searchParams.has('taskId')) {
+              const nextParams = new URLSearchParams(searchParams);
+              nextParams.delete('taskId');
+              setSearchParams(nextParams, { replace: true });
+            }
+          }}
         />
       )}
     </div>

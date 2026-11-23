@@ -1,5 +1,7 @@
 import { apiRequest } from '../../shared/api/client';
 import {
+  MyTaskItem,
+  MyTasksStats,
   ProjectLabel,
   TaskComment,
   TaskItem,
@@ -31,6 +33,9 @@ export interface UpdateTaskPayload {
 }
 
 export const tasksApi = {
+  listMyTasks: () =>
+    apiRequest<{ tasks: MyTaskItem[]; stats: MyTasksStats }>('/users/me/tasks'),
+
   listByProject: (projectId: string) =>
     apiRequest<{ tasks: TaskItem[] }>(`/projects/${projectId}/tasks`),
 

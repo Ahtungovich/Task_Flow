@@ -335,3 +335,14 @@ def serialize_comment(comment: Comment) -> dict:
         "updatedAt": to_iso(comment.updated_at),
         "author": serialize_user_short(comment.author),
     }
+
+
+def serialize_my_task(task: Task) -> dict:
+    # расширяем карточку задачи названием и статусом проекта для сводки в личном кабинете
+    data = serialize_task(task)
+    data["project"] = {
+        "id": str(task.project.id),
+        "name": task.project.name,
+        "status": task.project.status.value,
+    }
+    return data
