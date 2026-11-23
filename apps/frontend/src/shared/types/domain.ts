@@ -76,6 +76,16 @@ export interface ProjectLabel {
   createdAt: string;
 }
 
+export interface TaskComment {
+  id: string;
+  taskId: string;
+  authorId: string;
+  text: string;
+  createdAt: string;
+  updatedAt: string;
+  author: ProjectUserSummary;
+}
+
 export interface TaskItem {
   id: string;
   projectId: string;

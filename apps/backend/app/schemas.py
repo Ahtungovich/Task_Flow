@@ -6,6 +6,7 @@ from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.models import (
+    Comment,
     Label,
     Project,
     ProjectMembership,
@@ -191,6 +192,21 @@ class CreateLabelRequest(BaseModel):
         return v.strip()
 
 
+
+
+# данные для отправки нового комментария к задаче
+class CreateCommentRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=2000)
+
+    @field_validator("text")
+    @classmethod
+    def validate_text(cls, v: str) -> str:
+        trimmed = v.strip()
+        if not trimmed:
+            raise ValueError("Текст комментария не может быть пустым.")
+        return trimmed
+
+
 # ==========================================
 # функции сборки json-ответов для фронтенда
 # ==========================================
@@ -305,4 +321,17 @@ def serialize_task(task: Task) -> dict:
         "assignee": serialize_user_short(task.assignee) if task.assignee else None,
         "labels": [serialize_label(tl.label) for tl in task.task_labels],
         "commentsCount": len(active_comments),
+    }
+
+
+def serialize_comment(comment: Comment) -> dict:
+    # собираем словарь с данными комментария и его автора для ленты обсуждения
+    return {
+        "id": str(comment.id),
+        "taskId": str(comment.task_id),
+        "authorId": str(comment.author_id),
+        "text": comment.text,
+        "createdAt": to_iso(comment.created_at),
+        "updatedAt": to_iso(comment.updated_at),
+        "author": serialize_user_short(comment.author),
     }

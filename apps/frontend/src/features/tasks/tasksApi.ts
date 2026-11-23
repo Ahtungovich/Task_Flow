@@ -1,6 +1,7 @@
 import { apiRequest } from '../../shared/api/client';
 import {
   ProjectLabel,
+  TaskComment,
   TaskItem,
   TaskPriority,
   TaskStatus,
@@ -58,7 +59,10 @@ export const tasksApi = {
       `/projects/${projectId}/tasks/${taskId}/status`,
       {
         method: 'PATCH',
-        body: JSON.stringify({ status, ...(position !== undefined ? { position } : {}) }),
+        body: JSON.stringify({
+          status,
+          ...(position !== undefined ? { position } : {}),
+        }),
       },
     ),
 
@@ -80,4 +84,26 @@ export const tasksApi = {
     apiRequest<void>(`/projects/${projectId}/labels/${labelId}`, {
       method: 'DELETE',
     }),
+
+  listComments: (projectId: string, taskId: string) =>
+    apiRequest<{ comments: TaskComment[] }>(
+      `/projects/${projectId}/tasks/${taskId}/comments`,
+    ),
+
+  createComment: (projectId: string, taskId: string, text: string) =>
+    apiRequest<{ comment: TaskComment }>(
+      `/projects/${projectId}/tasks/${taskId}/comments`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ text }),
+      },
+    ),
+
+  deleteComment: (projectId: string, taskId: string, commentId: string) =>
+    apiRequest<void>(
+      `/projects/${projectId}/tasks/${taskId}/comments/${commentId}`,
+      {
+        method: 'DELETE',
+      },
+    ),
 };
