@@ -195,7 +195,6 @@ export function Layout({ children }: { children: ReactNode }) {
             <FolderKanban className="h-3.5 w-3.5" />
             {APP_CONFIG.appName} — система совместного планирования учебных проектов
           </span>
-          <span>Этап 3 · Проекты, участники и ролевая модель</span>
         </div>
       </footer>
     </div>
