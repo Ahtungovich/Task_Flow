@@ -1,17 +1,33 @@
+import hashlib
+from datetime import datetime, timezone
+
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import select
 
+# !! Подключён автоматический аудит изменений проекта и контекст текущего автора действия (Этап 11)
+from app.activity_hooks import current_actor_id_var, register_activity_hooks
 from app.config import settings
-# !! Добавлен импорт engine и Base для автоматического создания новых таблиц при старте сервера (Этап 10)
-from app.database import Base, engine
-from app.models import utc_now
-# !! Подключён новый роутер attachments для работы с прикреплёнными файлами (Этап 10)
-from app.routers import admin, attachments, auth, comments, health, projects, tasks, users
+from app.database import Base, SessionLocal, engine
+from app.models import UserSession, utc_now
+# !! Подключён роутер activity для выдачи истории изменений проекта (Этап 11)
+from app.routers import (
+    activity,
+    admin,
+    attachments,
+    auth,
+    comments,
+    health,
+    projects,
+    tasks,
+    users,
+)
 from app.schemas import to_iso
 
-# !! Автоматически создаём недостающие таблицы в PostgreSQL (включая таблицу attachments) при запуске приложения
+# !! Регистрируем слушатель ORM и создаём таблицу activity_logs при запуске сервера (Этап 11)
+register_activity_hooks()
 Base.metadata.create_all(bind=engine)
 
 # создаем главный экземпляр веб-сервера fastapi и включаем автодокументацию swagger
@@ -30,6 +46,34 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# !! Middleware для определения автора изменений из cookie сессии перед записью в журнал логов (Этап 11)
+@app.middleware("http")
+async def attach_actor_context_middleware(request: Request, call_next):
+    actor_id = None
+    raw_token = request.cookies.get('taskflow_session')
+    if raw_token:
+        token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+        db = SessionLocal()
+        try:
+            now = datetime.now(timezone.utc).replace(tzinfo=None)
+            sess = db.execute(
+                select(UserSession).where(
+                    UserSession.token_hash == token_hash,
+                    UserSession.expires_at > now,
+                )
+            ).scalar_one_or_none()
+            if sess:
+                actor_id = sess.user_id
+        finally:
+            db.close()
+
+    token = current_actor_id_var.set(actor_id)
+    try:
+        return await call_next(request)
+    finally:
+        current_actor_id_var.reset(token)
 
 
 # перехватываем стандартные http-ошибки чтобы отдавать их в едином красивом json-формате
@@ -79,5 +123,6 @@ app.include_router(projects.router, prefix=API_PREFIX)
 app.include_router(tasks.router, prefix=API_PREFIX)
 app.include_router(comments.router, prefix=API_PREFIX)
 app.include_router(admin.router, prefix=API_PREFIX)
-# !! Подключаем маршруты загрузки, скачивания и удаления файлов (Этап 10)
 app.include_router(attachments.router, prefix=API_PREFIX)
+# !! Подключаем маршрут истории изменений проекта (Этап 11)
+app.include_router(activity.router, prefix=API_PREFIX)

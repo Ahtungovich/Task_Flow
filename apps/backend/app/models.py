@@ -177,8 +177,11 @@ class Project(Base):
     labels: Mapped[list["Label"]] = relationship(
         back_populates="project", cascade="all, delete-orphan"
     )
-    # !! Добавлена связь проекта с прикреплёнными к нему файлами (Этап 10)
     attachments: Mapped[list["Attachment"]] = relationship(
+        back_populates="project", cascade="all, delete-orphan"
+    )
+    # !! Добавлена связь проекта с журналом истории изменений (Этап 11)
+    activity_logs: Mapped[list["ActivityLog"]] = relationship(
         back_populates="project", cascade="all, delete-orphan"
     )
 
@@ -271,7 +274,6 @@ class Task(Base):
     comments: Mapped[list["Comment"]] = relationship(
         back_populates="task", cascade="all, delete-orphan"
     )
-    # !! Добавлена связь задачи с прикреплёнными файлами (Этап 10)
     attachments: Mapped[list["Attachment"]] = relationship(
         back_populates="task", cascade="all, delete-orphan"
     )
@@ -351,9 +353,7 @@ class Comment(Base):
     author: Mapped["User"] = relationship(foreign_keys=[author_id])
 
 
-# !! Добавлена новая таблица attachments для хранения файлов, прикреплённых к проекту или задаче (Этап 10)
-# Если task_id равен NULL — файл прикреплён ко всему проекту целиком (например, общее ТЗ или шаблон отчёта).
-# Если task_id заполнен — файл прикреплён к конкретной задаче (например, исходники или скриншот выполнения).
+# таблица вложений (файлов) проекта и задач
 class Attachment(Base):
     __tablename__ = "attachments"
 
@@ -375,9 +375,7 @@ class Attachment(Base):
         ForeignKey("users.id", ondelete="RESTRICT"),
         nullable=False,
     )
-    # исходное имя файла которое видел пользователь при загрузке (используется при скачивании)
     original_name: Mapped[str] = mapped_column(String, nullable=False)
-    # безопасное уникальное имя файла на диске сервера (uuid + расширение) чтобы избежать коллизий
     stored_name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     content_type: Mapped[str] = mapped_column(
         String, default="application/octet-stream", nullable=False
@@ -391,3 +389,44 @@ class Attachment(Base):
     project: Mapped["Project"] = relationship(back_populates="attachments")
     task: Mapped[Optional["Task"]] = relationship(back_populates="attachments")
     uploader: Mapped["User"] = relationship(foreign_keys=[uploader_id])
+
+
+# !! Добавлена новая таблица activity_logs для подробной истории изменений внутри проекта (Этап 11)
+# Фиксирует кто (actor_id), когда (created_at), над какой сущностью (entity_type: TASK/PROJECT/MEMBER/COMMENT/ATTACHMENT/LABEL)
+# и какое именно действие совершил, включая человекочитаемое описание (summary) и детали (details).
+class ActivityLog(Base):
+    __tablename__ = "activity_logs"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    actor_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    task_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("tasks.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    # категория объекта: PROJECT, MEMBER, TASK, COMMENT, ATTACHMENT, LABEL
+    entity_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    # код события: CREATED, UPDATED, STATUS_CHANGED, ASSIGNED, DELETED, UPLOADED, ROLE_CHANGED и т.д.
+    action: Mapped[str] = mapped_column(String(48), nullable=False)
+    # готовая человекочитаемая строка события для отображения в журнале логов
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    # дополнительные детали изменения (например, «Старый статус → Новый статус»)
+    details: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utc_now, nullable=False
+    )
+
+    project: Mapped["Project"] = relationship(back_populates="activity_logs")
+    actor: Mapped[Optional["User"]] = relationship(foreign_keys=[actor_id])
+    task: Mapped[Optional["Task"]] = relationship(foreign_keys=[task_id])

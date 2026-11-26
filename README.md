@@ -7,7 +7,7 @@
 * **Backend:** Python, FastAPI, SQLAlchemy, PostgreSQL (Docker)
 * **Frontend:** React, TypeScript, Vite, Tailwind CSS, TanStack Query
 
-## Что реализовано на Этапе 10
-- Модель `Attachment` и роутер вложений (`attachments.py`) на Python (FastAPI + SQLAlchemy + `python-multipart`) с эндпоинтами загрузки, списка, скачивания и удаления файлов до 20 МБ на уровне проекта (`/api/v1/projects/{project_id}/attachments`) и конкретной задачи (`/api/v1/projects/{project_id}/tasks/{task_id}/attachments`)
-- Универсальный компонент `AttachmentsSection` (`attachmentsApi.ts`) на вкладке «Доска задач» (`ProjectDetailsPage`) с отображением размера, автора, скачиванием с исходным именем и разграничением прав (наблюдатель может только скачивать, удалять могут автор файла или руководитель)
-- План 75% MVP (Этапы 1–10) выполнен на стеке **React + Vite / Python + FastAPI + SQLAlchemy / PostgreSQL + Docker**
+## Что реализовано на Этапе 11
+- Модель `ActivityLog` (`activity_logs`), модуль автоматического аудита SQLAlchemy (`activity_hooks.py`) с определением автора действия из сессии и эндпоинт `GET /api/v1/projects/{project_id}/activity` (`activity.py`) на Python (FastAPI + SQLAlchemy), фиксирующий изменения задач, статусов, исполнителей, дедлайнов, участников, комментариев, меток и файлов проекта
+- Кнопка **«История изменений»** на панели доски проекта рядом с переключателем «Канбан-доска / Список» и кнопкой «Метки проекта» (`ProjectTasksBoard`), открывающая модальное окно `ProjectActivityModal` (`activityApi.ts`) с фильтрацией событий по категориям и поиском по участникам и задачам
+- План 85% MVP (Этапы 1–11) выполнен на стеке **React + Vite / Python + FastAPI + SQLAlchemy / PostgreSQL + Docker**

@@ -1,3 +1,5 @@
+// !! Подключено модальное окно подробной истории изменений (логов) проекта (Этап 11)
+import { ProjectActivityModal } from '../features/activity/ProjectActivityModal';
 // !! Подключён блок прикрепления и скачивания файлов проекта (Этап 10)
 import { AttachmentsSection } from '../features/attachments/AttachmentsSection';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -39,6 +41,9 @@ const ROLE_TONES: Record<ProjectRole, 'success' | 'neutral' | 'warning'> = {
 };
 
 export function ProjectDetailsPage() {
+  // !! Состояние открытия модального окна «История изменений» проекта (Этап 11)
+  const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
+
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -675,6 +680,16 @@ export function ProjectDetailsPage() {
           projectId={project.id}
           canUpload={project.myRole !== 'OBSERVER'}
           isProjectLeader={project.myRole === 'LEADER'}
+        />
+      )}
+
+      {/* !! Модальное окно журнала логов и изменений проекта (Этап 11) */}
+      {project && (
+        <ProjectActivityModal
+          projectId={project.id}
+          projectName={project.name}
+          isOpen={isActivityModalOpen}
+          onClose={() => setIsActivityModalOpen(false)}
         />
       )}
     </div>

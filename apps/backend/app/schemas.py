@@ -5,8 +5,9 @@ from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-# !! Добавлен импорт модели Attachment для сборки JSON-карточек файлов (Этап 10)
+# !! Добавлен импорт модели ActivityLog для сборки JSON-записей истории изменений (Этап 11)
 from app.models import (
+    ActivityLog,
     Attachment,
     Comment,
     Label,
@@ -360,8 +361,6 @@ def serialize_my_task(task: Task) -> dict:
     return data
 
 
-# !! Добавлен сериализатор для прикреплённых файлов проекта и задачи (Этап 10)
-# Не отдаём внутренний путь stored_name на диске, но возвращаем готовую ссылку downloadUrl для скачивания
 def serialize_attachment(attachment: Attachment) -> dict:
     return {
         "id": str(attachment.id),
@@ -374,4 +373,20 @@ def serialize_attachment(attachment: Attachment) -> dict:
         "createdAt": to_iso(attachment.created_at),
         "uploader": serialize_user_short(attachment.uploader),
         "downloadUrl": f"/api/v1/attachments/{attachment.id}/download",
+    }
+
+
+# !! Добавлен сериализатор для записи из журнала истории изменений проекта (Этап 11)
+def serialize_activity_log(log: ActivityLog) -> dict:
+    return {
+        "id": str(log.id),
+        "projectId": str(log.project_id),
+        "actorId": str(log.actor_id) if log.actor_id else None,
+        "taskId": str(log.task_id) if log.task_id else None,
+        "entityType": log.entity_type,
+        "action": log.action,
+        "summary": log.summary,
+        "details": log.details,
+        "createdAt": to_iso(log.created_at),
+        "actor": serialize_user_short(log.actor) if log.actor else None,
     }

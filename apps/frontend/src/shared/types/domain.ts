@@ -96,7 +96,6 @@ export interface TaskComment {
   author: ProjectUserSummary;
 }
 
-// !! Добавлен интерфейс AttachmentItem для файлов, прикреплённых к проекту или задаче (Этап 10)
 export interface AttachmentItem {
   id: string;
   projectId: string;
@@ -108,6 +107,28 @@ export interface AttachmentItem {
   createdAt: string;
   uploader: ProjectUserSummary;
   downloadUrl: string;
+}
+
+// !! Добавлены типы записей журнала истории изменений проекта (Этап 11)
+export type ActivityEntityType =
+  | 'PROJECT'
+  | 'MEMBER'
+  | 'TASK'
+  | 'COMMENT'
+  | 'ATTACHMENT'
+  | 'LABEL';
+
+export interface ActivityLogItem {
+  id: string;
+  projectId: string;
+  actorId: string | null;
+  taskId: string | null;
+  entityType: ActivityEntityType;
+  action: string;
+  summary: string;
+  details: string | null;
+  createdAt: string;
+  actor: ProjectUserSummary | null;
 }
 
 export interface TaskItem {

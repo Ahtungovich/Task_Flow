@@ -1,3 +1,5 @@
+// npm run dev:backend Подключено модальное окно истории изменений проекта (Этап 11)
+import { ProjectActivityModal } from '../activity/ProjectActivityModal';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
@@ -10,6 +12,7 @@ import {
   Tag,
   Trash2,
   User,
+  History,
 } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -52,6 +55,9 @@ export function ProjectTasksBoard({
   myRole,
   members,
 }: ProjectTasksBoardProps) {
+  // npm run dev:backend Состояние открытия журнала изменений проекта (Этап 11)
+  const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
+
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -264,6 +270,15 @@ export function ProjectTasksBoard({
               Метки проекта ({labels.length})
             </Button>
           )}
+          {/* !! Кнопка открытия истории изменений проекта рядом с «Метки проекта» (Этап 11) */}
+          <button
+            type="button"
+            onClick={() => setIsActivityModalOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50"
+          >
+            <History className="h-3.5 w-3.5" />
+            История изменений
+          </button>
         </div>
 
         {canCreateTask && (
@@ -723,6 +738,14 @@ export function ProjectTasksBoard({
           }}
         />
       )}
+
+      {/* npm run dev:backend Модальное окно истории изменений проекта (Этап 11) */}
+      <ProjectActivityModal
+        projectId={projectId}
+        projectName={'Проект'}
+        isOpen={isActivityModalOpen}
+        onClose={() => setIsActivityModalOpen(false)}
+      />
     </div>
   );
 }
