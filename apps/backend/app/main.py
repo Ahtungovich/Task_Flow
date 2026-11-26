@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.models import utc_now
-from app.routers import auth, comments, health, projects, tasks, users
+from app.routers import admin, auth, comments, health, projects, tasks, users
 from app.schemas import to_iso
 
 # создаем главный экземпляр веб-сервера fastapi и включаем автодокументацию swagger
@@ -72,3 +72,4 @@ app.include_router(users.router, prefix=API_PREFIX)
 app.include_router(projects.router, prefix=API_PREFIX)
 app.include_router(tasks.router, prefix=API_PREFIX)
 app.include_router(comments.router, prefix=API_PREFIX)
+app.include_router(admin.router, prefix=API_PREFIX)

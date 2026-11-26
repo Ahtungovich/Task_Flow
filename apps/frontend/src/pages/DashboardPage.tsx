@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { TeacherVerificationPanel } from '../features/admin/TeacherVerificationPanel';
 import { useAuth } from '../features/auth/AuthContext';
 import { projectsApi } from '../features/projects/projectsApi';
 import {
@@ -96,6 +97,8 @@ export function DashboardPage() {
 
   const canCreateProject =
     user.accountType === 'TEACHER' && user.isTeacherVerified;
+  const isUnverifiedTeacher =
+    user.accountType === 'TEACHER' && !user.isTeacherVerified;
 
   return (
     <div className="space-y-6">
@@ -107,7 +110,13 @@ export function DashboardPage() {
               Добро пожаловать, {user.fullName}
             </h1>
             <Badge
-              tone={user.accountType === 'TEACHER' ? 'success' : 'neutral'}
+              tone={
+                user.accountType === 'ADMIN'
+                  ? 'warning'
+                  : canCreateProject
+                    ? 'success'
+                    : 'neutral'
+              }
             >
               {ACCOUNT_TYPE_LABELS[user.accountType]}
             </Badge>
@@ -135,6 +144,18 @@ export function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      {/* Уведомление для неподтверждённого преподавателя */}
+      {isUnverifiedTeacher && (
+        <Alert tone="info">
+          Ваш аккаунт преподавателя ожидает подтверждения системным
+          администратором. Создание новых проектов станет доступно сразу после
+          проверки учётной записи.
+        </Alert>
+      )}
+
+      {/* Панель системного администратора (Этап 8) */}
+      {user.accountType === 'ADMIN' && <TeacherVerificationPanel />}
 
       {/* Сводные карточки статистики */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

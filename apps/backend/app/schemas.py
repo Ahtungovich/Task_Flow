@@ -192,8 +192,6 @@ class CreateLabelRequest(BaseModel):
         return v.strip()
 
 
-
-
 # данные для отправки нового комментария к задаче
 class CreateCommentRequest(BaseModel):
     text: str = Field(min_length=1, max_length=2000)
@@ -205,6 +203,11 @@ class CreateCommentRequest(BaseModel):
         if not trimmed:
             raise ValueError("Текст комментария не может быть пустым.")
         return trimmed
+
+
+# данные для подтверждения или отзыва статуса преподавателя администратором
+class VerifyTeacherRequest(BaseModel):
+    verified: bool
 
 
 # ==========================================
@@ -227,6 +230,13 @@ def serialize_user(user: User) -> dict:
         "createdAt": to_iso(user.created_at),
         "updatedAt": to_iso(user.updated_at),
     }
+
+
+def serialize_teacher_application(user: User, projects_count: int = 0) -> dict:
+    # собираем карточку преподавателя для панели администратора
+    data = serialize_user(user)
+    data["projectsCount"] = projects_count
+    return data
 
 
 def serialize_user_short(user: User) -> dict:

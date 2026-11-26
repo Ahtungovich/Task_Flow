@@ -61,7 +61,7 @@ def load_settings() -> Settings:
             "Переменная окружения SESSION_SECRET обязательна (минимум 16 символов)."
         )
 
-    # собираем итоговый конфиг со значениями по умолчанию на случай если чего-то нет в .env
+    # собираем итоговый конфиг по умолчанию новые преподаватели ждут подтверждения от админа
     return Settings(
         node_env=os.getenv("NODE_ENV", "development"),
         app_name=os.getenv("APP_NAME", "TaskFlow"),
@@ -71,7 +71,7 @@ def load_settings() -> Settings:
         session_secret=session_secret,
         session_ttl_hours=int(os.getenv("SESSION_TTL_HOURS", "168")),
         cookie_secure=os.getenv("COOKIE_SECURE", "false").lower() == "true",
-        auto_approve_teachers=os.getenv("AUTO_APPROVE_TEACHERS", "true").lower()
+        auto_approve_teachers=os.getenv("AUTO_APPROVE_TEACHERS", "false").lower()
         == "true",
         email_verification_required=os.getenv(
             "EMAIL_VERIFICATION_REQUIRED", "false"

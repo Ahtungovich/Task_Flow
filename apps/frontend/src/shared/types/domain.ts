@@ -26,6 +26,16 @@ export interface UserProfile {
   updatedAt: string;
 }
 
+export interface TeacherApplicationItem extends UserProfile {
+  projectsCount: number;
+}
+
+export interface TeacherVerificationStats {
+  total: number;
+  pending: number;
+  verified: number;
+}
+
 export interface ProjectUserSummary {
   id: string;
   email: string;

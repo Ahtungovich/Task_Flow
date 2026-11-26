@@ -87,6 +87,18 @@ def require_verified_teacher(
     return current_user
 
 
+def require_admin(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    # проверка прав системного администратора для модерации заявок преподавателей
+    if current_user.account_type != AccountType.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Действие доступно только системному администратору.",
+        )
+    return current_user
+
+
 def get_project_access(
     project_id: UUID,
     current_user: User = Depends(get_current_user),
