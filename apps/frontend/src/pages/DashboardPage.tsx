@@ -7,6 +7,7 @@ import {
   Clock,
   FolderKanban,
   FolderPlus,
+  List,
   ListTodo,
   MessageSquare,
   UserCircle2,
@@ -17,6 +18,8 @@ import { Link } from 'react-router-dom';
 import { TeacherVerificationPanel } from '../features/admin/TeacherVerificationPanel';
 import { useAuth } from '../features/auth/AuthContext';
 import { projectsApi } from '../features/projects/projectsApi';
+// !! Подключён новый компонент календарного представления задач (Этап 9)
+import { TasksCalendarView } from '../features/tasks/TasksCalendarView';
 import {
   PRIORITY_BADGE_CLASSES,
   STATUS_BADGE_TONES,
@@ -46,6 +49,9 @@ const ROLE_TONES: Record<ProjectRole, 'success' | 'neutral' | 'warning'> = {
 
 export function DashboardPage() {
   const { user } = useAuth();
+
+  // !! Добавлено состояние переключения режима отображения блока «Мои задачи»: список или календарь (Этап 9)
+  const [tasksViewMode, setTasksViewMode] = useState<'LIST' | 'CALENDAR'>('LIST');
 
   const [statusFilter, setStatusFilter] = useState<string>('ACTIVE_ONLY');
   const [projectFilter, setProjectFilter] = useState<string>('ALL');
@@ -234,6 +240,34 @@ export function DashboardPage() {
                 Все задачи из ваших проектов, где вы назначены исполнителем
               </p>
             </div>
+
+            {/* !! Добавлен переключатель режимов «Список» / «Календарь» (Этап 9) */}
+            <div className="inline-flex self-start rounded-lg border border-slate-200 bg-slate-100 p-0.5">
+              <button
+                type="button"
+                onClick={() => setTasksViewMode('LIST')}
+                className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                  tasksViewMode === 'LIST'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <List className="h-3.5 w-3.5" />
+                Список
+              </button>
+              <button
+                type="button"
+                onClick={() => setTasksViewMode('CALENDAR')}
+                className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                  tasksViewMode === 'CALENDAR'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Calendar className="h-3.5 w-3.5" />
+                Календарь
+              </button>
+            </div>
           </div>
 
           {/* Фильтры задач */}
@@ -291,6 +325,9 @@ export function DashboardPage() {
                   : 'Не удалось загрузить список ваших задач.'}
               </Alert>
             </div>
+          ) : tasksViewMode === 'CALENDAR' ? (
+            // !! Отрисовываем календарное представление задач с учётом всех выбранных фильтров (Этап 9)
+            <TasksCalendarView tasks={filteredTasks} />
           ) : filteredTasks.length === 0 ? (
             <div className="mt-4 rounded-lg border border-dashed border-slate-200 p-8 text-center">
               <ListTodo className="mx-auto h-7 w-7 text-slate-300" />
