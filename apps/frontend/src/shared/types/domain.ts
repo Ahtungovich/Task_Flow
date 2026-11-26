@@ -96,6 +96,20 @@ export interface TaskComment {
   author: ProjectUserSummary;
 }
 
+// !! Добавлен интерфейс AttachmentItem для файлов, прикреплённых к проекту или задаче (Этап 10)
+export interface AttachmentItem {
+  id: string;
+  projectId: string;
+  taskId: string | null;
+  uploaderId: string;
+  originalName: string;
+  contentType: string;
+  sizeBytes: number;
+  createdAt: string;
+  uploader: ProjectUserSummary;
+  downloadUrl: string;
+}
+
 export interface TaskItem {
   id: string;
   projectId: string;

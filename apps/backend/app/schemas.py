@@ -5,7 +5,9 @@ from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+# !! Добавлен импорт модели Attachment для сборки JSON-карточек файлов (Этап 10)
 from app.models import (
+    Attachment,
     Comment,
     Label,
     Project,
@@ -356,3 +358,20 @@ def serialize_my_task(task: Task) -> dict:
         "status": task.project.status.value,
     }
     return data
+
+
+# !! Добавлен сериализатор для прикреплённых файлов проекта и задачи (Этап 10)
+# Не отдаём внутренний путь stored_name на диске, но возвращаем готовую ссылку downloadUrl для скачивания
+def serialize_attachment(attachment: Attachment) -> dict:
+    return {
+        "id": str(attachment.id),
+        "projectId": str(attachment.project_id),
+        "taskId": str(attachment.task_id) if attachment.task_id else None,
+        "uploaderId": str(attachment.uploader_id),
+        "originalName": attachment.original_name,
+        "contentType": attachment.content_type,
+        "sizeBytes": attachment.size_bytes,
+        "createdAt": to_iso(attachment.created_at),
+        "uploader": serialize_user_short(attachment.uploader),
+        "downloadUrl": f"/api/v1/attachments/{attachment.id}/download",
+    }

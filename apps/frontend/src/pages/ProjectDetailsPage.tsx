@@ -1,3 +1,5 @@
+// !! Подключён блок прикрепления и скачивания файлов проекта (Этап 10)
+import { AttachmentsSection } from '../features/attachments/AttachmentsSection';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Archive,
@@ -665,6 +667,15 @@ export function ProjectDetailsPage() {
             </div>
           </Card>
         </div>
+      )}
+
+      {/* !! Блок прикрепления и скачивания общих файлов проекта (Этап 10) */}
+      {project && activeTab === 'board' && (
+        <AttachmentsSection
+          projectId={project.id}
+          canUpload={project.myRole !== 'OBSERVER'}
+          isProjectLeader={project.myRole === 'LEADER'}
+        />
       )}
     </div>
   );

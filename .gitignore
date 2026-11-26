@@ -26,3 +26,5 @@ uploads/
 __pycache__/
 *.py[cod]
 *.tsbuildinfo
+
+uploads/

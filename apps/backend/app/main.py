@@ -4,9 +4,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import settings
+# !! Добавлен импорт engine и Base для автоматического создания новых таблиц при старте сервера (Этап 10)
+from app.database import Base, engine
 from app.models import utc_now
-from app.routers import admin, auth, comments, health, projects, tasks, users
+# !! Подключён новый роутер attachments для работы с прикреплёнными файлами (Этап 10)
+from app.routers import admin, attachments, auth, comments, health, projects, tasks, users
 from app.schemas import to_iso
+
+# !! Автоматически создаём недостающие таблицы в PostgreSQL (включая таблицу attachments) при запуске приложения
+Base.metadata.create_all(bind=engine)
 
 # создаем главный экземпляр веб-сервера fastapi и включаем автодокументацию swagger
 app = FastAPI(
@@ -73,3 +79,5 @@ app.include_router(projects.router, prefix=API_PREFIX)
 app.include_router(tasks.router, prefix=API_PREFIX)
 app.include_router(comments.router, prefix=API_PREFIX)
 app.include_router(admin.router, prefix=API_PREFIX)
+# !! Подключаем маршруты загрузки, скачивания и удаления файлов (Этап 10)
+app.include_router(attachments.router, prefix=API_PREFIX)
