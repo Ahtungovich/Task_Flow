@@ -109,7 +109,6 @@ export interface AttachmentItem {
   downloadUrl: string;
 }
 
-// !! Добавлены типы записей журнала истории изменений проекта (Этап 11)
 export type ActivityEntityType =
   | 'PROJECT'
   | 'MEMBER'
@@ -129,6 +128,22 @@ export interface ActivityLogItem {
   details: string | null;
   createdAt: string;
   actor: ProjectUserSummary | null;
+}
+
+// !! Добавлены типы уведомлений на сайте: новое задание и напоминания за 3 и 1 день до дедлайна (Этап 12)
+export type NotificationKind = 'TASK_ASSIGNED' | 'DEADLINE_3D' | 'DEADLINE_1D';
+
+export interface NotificationItem {
+  id: string;
+  userId: string;
+  projectId: string | null;
+  taskId: string | null;
+  kind: NotificationKind;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+  projectName: string | null;
 }
 
 export interface TaskItem {

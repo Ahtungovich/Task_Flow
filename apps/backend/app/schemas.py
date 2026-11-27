@@ -5,12 +5,13 @@ from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-# !! Добавлен импорт модели ActivityLog для сборки JSON-записей истории изменений (Этап 11)
+# !! Добавлен импорт модели Notification для сериализации уведомлений пользователя (Этап 12)
 from app.models import (
     ActivityLog,
     Attachment,
     Comment,
     Label,
+    Notification,
     Project,
     ProjectMembership,
     ProjectRole,
@@ -376,7 +377,6 @@ def serialize_attachment(attachment: Attachment) -> dict:
     }
 
 
-# !! Добавлен сериализатор для записи из журнала истории изменений проекта (Этап 11)
 def serialize_activity_log(log: ActivityLog) -> dict:
     return {
         "id": str(log.id),
@@ -389,4 +389,20 @@ def serialize_activity_log(log: ActivityLog) -> dict:
         "details": log.details,
         "createdAt": to_iso(log.created_at),
         "actor": serialize_user_short(log.actor) if log.actor else None,
+    }
+
+
+# !! Добавлен сериализатор для внутренних уведомлений пользователя (Этап 12)
+def serialize_notification(item: Notification) -> dict:
+    return {
+        "id": str(item.id),
+        "userId": str(item.user_id),
+        "projectId": str(item.project_id) if item.project_id else None,
+        "taskId": str(item.task_id) if item.task_id else None,
+        "kind": item.kind,
+        "title": item.title,
+        "message": item.message,
+        "isRead": item.is_read,
+        "createdAt": to_iso(item.created_at),
+        "projectName": item.project.name if item.project else None,
     }

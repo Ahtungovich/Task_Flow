@@ -10,15 +10,15 @@ import {
   List,
   ListTodo,
   MessageSquare,
-  UserCircle2,
   Users,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { TeacherVerificationPanel } from '../features/admin/TeacherVerificationPanel';
 import { useAuth } from '../features/auth/AuthContext';
+// !! Подключён компонент кнопки уведомлений со счётчиком вместо кнопки «Профиль» в шапке кабинета (Этап 12)
+import { NotificationsBellButton } from '../features/notifications/NotificationsBellButton';
 import { projectsApi } from '../features/projects/projectsApi';
-// !! Подключён новый компонент календарного представления задач (Этап 9)
 import { TasksCalendarView } from '../features/tasks/TasksCalendarView';
 import {
   PRIORITY_BADGE_CLASSES,
@@ -50,7 +50,6 @@ const ROLE_TONES: Record<ProjectRole, 'success' | 'neutral' | 'warning'> = {
 export function DashboardPage() {
   const { user } = useAuth();
 
-  // !! Добавлено состояние переключения режима отображения блока «Мои задачи»: список или календарь (Этап 9)
   const [tasksViewMode, setTasksViewMode] = useState<'LIST' | 'CALENDAR'>('LIST');
 
   const [statusFilter, setStatusFilter] = useState<string>('ACTIVE_ONLY');
@@ -142,12 +141,8 @@ export function DashboardPage() {
               </Button>
             </Link>
           )}
-          <Link to="/profile">
-            <Button variant="secondary">
-              <UserCircle2 className="h-4 w-4" />
-              Профиль
-            </Button>
-          </Link>
+          {/* !! Заменили кнопку «Профиль» в правом верхнем углу кабинета на кнопку «Уведомления» с красным индикатором количества (Этап 12) */}
+          <NotificationsBellButton />
         </div>
       </div>
 
@@ -241,7 +236,6 @@ export function DashboardPage() {
               </p>
             </div>
 
-            {/* !! Добавлен переключатель режимов «Список» / «Календарь» (Этап 9) */}
             <div className="inline-flex self-start rounded-lg border border-slate-200 bg-slate-100 p-0.5">
               <button
                 type="button"
@@ -326,7 +320,6 @@ export function DashboardPage() {
               </Alert>
             </div>
           ) : tasksViewMode === 'CALENDAR' ? (
-            // !! Отрисовываем календарное представление задач с учётом всех выбранных фильтров (Этап 9)
             <TasksCalendarView tasks={filteredTasks} />
           ) : filteredTasks.length === 0 ? (
             <div className="mt-4 rounded-lg border border-dashed border-slate-200 p-8 text-center">

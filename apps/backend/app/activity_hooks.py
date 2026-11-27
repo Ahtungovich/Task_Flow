@@ -1,12 +1,12 @@
-# !! Добавлен модуль автоматического аудита изменений проекта через SQLAlchemy ORM (Этап 11)
-# Отслеживает создание, редактирование и удаление задач, смену статусов, приоритетов,
-# дедлайнов, исполнителей, участников, ролей, комментариев, меток и файлов в рамках транзакции БД.
+# !! Обновлённый модуль автоматического аудита и генерации уведомлений при назначении задач (Этапы 11–12)
+# Отслеживает изменения в проекте для журнала логов (ActivityLog), а также автоматически создаёт
+# внутреннее уведомление (Notification), когда пользователю назначают новую задачу.
 from contextvars import ContextVar
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import event, inspect, select
+from sqlalchemy import event, inspect
 from sqlalchemy.orm import Session
 
 from app.models import (
@@ -14,24 +14,23 @@ from app.models import (
     Attachment,
     Comment,
     Label,
+    Notification,
     Project,
     ProjectMembership,
     ProjectRole,
     ProjectStatus,
     Task,
-    TaskLabel,
     TaskPriority,
     TaskStatus,
     User,
     utc_now,
 )
 
-# !! Контекстная переменная для хранения ID текущего пользователя, выполняющего HTTP-запрос
+# Контекстная переменная для хранения ID текущего пользователя, выполняющего HTTP-запрос
 current_actor_id_var: ContextVar[Optional[UUID]] = ContextVar(
     "current_actor_id_var", default=None
 )
 
-# !! Словари человекочитаемых переводов статусов, приоритетов и ролей для красивых записей в логах
 TASK_STATUS_RU = {
     TaskStatus.NEW: "Новая",
     TaskStatus.IN_PROGRESS: "В работе",
@@ -75,6 +74,15 @@ def _resolve_user_name(session: Session, user_id: Optional[UUID]) -> str:
     return "Пользователь"
 
 
+def _resolve_project_name(session: Session, project_id: Optional[UUID]) -> str:
+    if not project_id:
+        return "Проект"
+    project = session.get(Project, project_id)
+    if project:
+        return project.name
+    return "Проект"
+
+
 def _resolve_task_title(session: Session, task_id: Optional[UUID]) -> str:
     if not task_id:
         return "Задача"
@@ -110,12 +118,38 @@ def _build_log(
     )
 
 
+# !! Добавлена вспомогательная функция сборки уведомления о назначении новой задачи (Этап 12)
+def _build_task_assigned_notification(
+    session: Session,
+    task: Task,
+    assignee_id: UUID,
+    actor_id: Optional[UUID],
+) -> Notification:
+    project_name = _resolve_project_name(session, task.project_id)
+    actor_name = (
+        _resolve_user_name(session, actor_id) if actor_id else "Руководитель проекта"
+    )
+    deadline_note = (
+        f" · Дедлайн: {_fmt_date(task.deadline)}" if task.deadline else ""
+    )
+    return Notification(
+        user_id=assignee_id,
+        project_id=task.project_id,
+        task_id=task.id,
+        kind="TASK_ASSIGNED",
+        title="Новое задание",
+        message=f"{actor_name} назначил вам задачу «{task.title}» в проекте «{project_name}»{deadline_note}.",
+        is_read=False,
+        created_at=utc_now(),
+    )
+
+
 def _before_flush_audit(session: Session, flush_context, instances) -> None:
-    # Избегаем повторного срабатывания внутри одного flush
     if session.info.get("_audit_in_progress"):
         return
 
     logs_to_add: list[ActivityLog] = []
+    notifications_to_add: list[Notification] = []
 
     # 1. Новые объекты (session.new)
     for obj in list(session.new):
@@ -132,7 +166,6 @@ def _before_flush_audit(session: Session, flush_context, instances) -> None:
             )
 
         elif isinstance(obj, ProjectMembership):
-            # Не дублируем лог добавления руководителя в момент самого создания проекта
             project_is_new = any(
                 isinstance(n, Project) and n.id == obj.project_id for n in session.new
             )
@@ -174,6 +207,17 @@ def _before_flush_audit(session: Session, flush_context, instances) -> None:
                     details=" · ".join(details_parts),
                 )
             )
+
+            # !! Если при создании задачи сразу назначен исполнитель (и это не сам создатель) — отправляем ему уведомление (Этап 12)
+            if obj.assignee_id and obj.assignee_id != actor_id:
+                notifications_to_add.append(
+                    _build_task_assigned_notification(
+                        session=session,
+                        task=obj,
+                        assignee_id=obj.assignee_id,
+                        actor_id=actor_id,
+                    )
+                )
 
         elif isinstance(obj, Comment):
             task = obj.task or session.get(Task, obj.task_id)
@@ -240,7 +284,6 @@ def _before_flush_audit(session: Session, flush_context, instances) -> None:
 
         if isinstance(obj, Task):
             actor_id = _get_actor_id(obj.author_id)
-            # Проверяем мягкое удаление задачи
             del_hist = state.attrs.deleted_at.history
             if del_hist.has_changes() and obj.deleted_at is not None:
                 logs_to_add.append(
@@ -255,7 +298,6 @@ def _before_flush_audit(session: Session, flush_context, instances) -> None:
                 )
                 continue
 
-            # Проверяем смену статуса (в том числе Drag-and-Drop по колонкам канбана)
             status_hist = state.attrs.status.history
             if status_hist.has_changes() and status_hist.deleted:
                 old_st = status_hist.deleted[0]
@@ -273,7 +315,6 @@ def _before_flush_audit(session: Session, flush_context, instances) -> None:
                         )
                     )
 
-            # Проверяем смену исполнителя
             assignee_hist = state.attrs.assignee_id.history
             if assignee_hist.has_changes():
                 old_uid = assignee_hist.deleted[0] if assignee_hist.deleted else None
@@ -293,7 +334,17 @@ def _before_flush_audit(session: Session, flush_context, instances) -> None:
                         )
                     )
 
-            # Проверяем смену приоритета
+                    # !! Если задачу переназначили на нового исполнителя (и это не он сам) — создаём уведомление (Этап 12)
+                    if new_uid is not None and new_uid != actor_id:
+                        notifications_to_add.append(
+                            _build_task_assigned_notification(
+                                session=session,
+                                task=obj,
+                                assignee_id=new_uid,
+                                actor_id=actor_id,
+                            )
+                        )
+
             prio_hist = state.attrs.priority.history
             if prio_hist.has_changes() and prio_hist.deleted:
                 old_pr = prio_hist.deleted[0]
@@ -311,7 +362,6 @@ def _before_flush_audit(session: Session, flush_context, instances) -> None:
                         )
                     )
 
-            # Проверяем смену дедлайна
             deadline_hist = state.attrs.deadline.history
             if deadline_hist.has_changes():
                 old_dl = deadline_hist.deleted[0] if deadline_hist.deleted else None
@@ -329,7 +379,6 @@ def _before_flush_audit(session: Session, flush_context, instances) -> None:
                         )
                     )
 
-            # Проверяем переименование задачи
             title_hist = state.attrs.title.history
             if title_hist.has_changes() and title_hist.deleted:
                 old_title = title_hist.deleted[0]
@@ -341,12 +390,11 @@ def _before_flush_audit(session: Session, flush_context, instances) -> None:
                             task_id=obj.id,
                             entity_type="TASK",
                             action="UPDATED",
-                            summary=f"Переименовал задачу",
+                            summary="Переименовал задачу",
                             details=f"«{old_title}» → «{obj.title}»",
                         )
                     )
 
-            # Проверяем изменение описания задачи (если других более специфичных правок не было)
             desc_hist = state.attrs.description.history
             if (
                 desc_hist.has_changes()
@@ -522,16 +570,17 @@ def _before_flush_audit(session: Session, flush_context, instances) -> None:
                     )
                 )
 
-    if logs_to_add:
+    if logs_to_add or notifications_to_add:
         session.info["_audit_in_progress"] = True
         try:
             for item in logs_to_add:
                 session.add(item)
+            for notif in notifications_to_add:
+                session.add(notif)
         finally:
             session.info["_audit_in_progress"] = False
 
 
 def register_activity_hooks() -> None:
-    # Регистрируем обработчик один раз на уровне класса Session
     if not event.contains(Session, "before_flush", _before_flush_audit):
         event.listen(Session, "before_flush", _before_flush_audit)

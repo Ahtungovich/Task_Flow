@@ -7,7 +7,6 @@
 * **Backend:** Python, FastAPI, SQLAlchemy, PostgreSQL (Docker)
 * **Frontend:** React, TypeScript, Vite, Tailwind CSS, TanStack Query
 
-## Что реализовано на Этапе 11
-- Модель `ActivityLog` (`activity_logs`), модуль автоматического аудита SQLAlchemy (`activity_hooks.py`) с определением автора действия из сессии и эндпоинт `GET /api/v1/projects/{project_id}/activity` (`activity.py`) на Python (FastAPI + SQLAlchemy), фиксирующий изменения задач, статусов, исполнителей, дедлайнов, участников, комментариев, меток и файлов проекта
-- Кнопка **«История изменений»** на панели доски проекта рядом с переключателем «Канбан-доска / Список» и кнопкой «Метки проекта» (`ProjectTasksBoard`), открывающая модальное окно `ProjectActivityModal` (`activityApi.ts`) с фильтрацией событий по категориям и поиском по участникам и задачам
-- План 85% MVP (Этапы 1–11) выполнен на стеке **React + Vite / Python + FastAPI + SQLAlchemy / PostgreSQL + Docker**
+## Что реализовано на Этапе 12
+- Модель `Notification` (`notifications`), автоматическая генерация уведомлений при назначении новой задачи (`activity_hooks.py`) и роутер `notifications.py` (`GET /api/v1/notifications`, `GET /api/v1/notifications/unread-count`, `PATCH /api/v1/notifications/{notification_id}/read`, `POST /api/v1/notifications/read-all`) на Python (FastAPI + SQLAlchemy) с дедуплицированными напоминаниями за 3 дня и за 1 день до дедлайна
+- Компонент `NotificationsBellButton` (`notificationsApi.ts`) в шапке личного кабинета (`DashboardPage`) вместо кнопки «Профиль» с красным кружочком-счётчиком непрочитанных уведомлений (скрывается при нуле), выпадающей лентой оповещений и переходом в карточку задачи

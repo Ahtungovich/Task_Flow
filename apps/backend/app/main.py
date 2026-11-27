@@ -7,12 +7,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 
-# !! Подключён автоматический аудит изменений проекта и контекст текущего автора действия (Этап 11)
 from app.activity_hooks import current_actor_id_var, register_activity_hooks
 from app.config import settings
 from app.database import Base, SessionLocal, engine
 from app.models import UserSession, utc_now
-# !! Подключён роутер activity для выдачи истории изменений проекта (Этап 11)
+# !! Подключён новый роутер notifications для внутренних уведомлений о заданиях и дедлайнах (Этап 12)
 from app.routers import (
     activity,
     admin,
@@ -20,13 +19,14 @@ from app.routers import (
     auth,
     comments,
     health,
+    notifications,
     projects,
     tasks,
     users,
 )
 from app.schemas import to_iso
 
-# !! Регистрируем слушатель ORM и создаём таблицу activity_logs при запуске сервера (Этап 11)
+# !! Регистрируем слушатель ORM и создаём недостающие таблицы (включая notifications) при запуске сервера (Этап 12)
 register_activity_hooks()
 Base.metadata.create_all(bind=engine)
 
@@ -48,11 +48,16 @@ app.add_middleware(
 )
 
 
-# !! Middleware для определения автора изменений из cookie сессии перед записью в журнал логов (Этап 11)
+# Middleware для определения автора изменений из cookie сессии перед записью в журнал логов и уведомлений
 @app.middleware("http")
 async def attach_actor_context_middleware(request: Request, call_next):
     actor_id = None
-    raw_token = request.cookies.get('taskflow_session')
+    cookie_name = (
+        getattr(settings, "session_cookie_name", None)
+        or getattr(settings, "cookie_name", None)
+        or "taskflow_session"
+    )
+    raw_token = request.cookies.get(cookie_name)
     if raw_token:
         token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
         db = SessionLocal()
@@ -124,5 +129,6 @@ app.include_router(tasks.router, prefix=API_PREFIX)
 app.include_router(comments.router, prefix=API_PREFIX)
 app.include_router(admin.router, prefix=API_PREFIX)
 app.include_router(attachments.router, prefix=API_PREFIX)
-# !! Подключаем маршрут истории изменений проекта (Этап 11)
 app.include_router(activity.router, prefix=API_PREFIX)
+# !! Подключаем маршруты уведомлений пользователя (Этап 12)
+app.include_router(notifications.router, prefix=API_PREFIX)

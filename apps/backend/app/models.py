@@ -112,6 +112,10 @@ class User(Base):
     memberships: Mapped[list["ProjectMembership"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    # !! Добавлена связь пользователя с его внутренними уведомлениями (Этап 12)
+    notifications: Mapped[list["Notification"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 # таблица активных сессий авторизации (привязана к cookie в браузере)
@@ -180,7 +184,6 @@ class Project(Base):
     attachments: Mapped[list["Attachment"]] = relationship(
         back_populates="project", cascade="all, delete-orphan"
     )
-    # !! Добавлена связь проекта с журналом истории изменений (Этап 11)
     activity_logs: Mapped[list["ActivityLog"]] = relationship(
         back_populates="project", cascade="all, delete-orphan"
     )
@@ -391,9 +394,7 @@ class Attachment(Base):
     uploader: Mapped["User"] = relationship(foreign_keys=[uploader_id])
 
 
-# !! Добавлена новая таблица activity_logs для подробной истории изменений внутри проекта (Этап 11)
-# Фиксирует кто (actor_id), когда (created_at), над какой сущностью (entity_type: TASK/PROJECT/MEMBER/COMMENT/ATTACHMENT/LABEL)
-# и какое именно действие совершил, включая человекочитаемое описание (summary) и детали (details).
+# таблица журнала истории изменений проекта
 class ActivityLog(Base):
     __tablename__ = "activity_logs"
 
@@ -415,13 +416,9 @@ class ActivityLog(Base):
         ForeignKey("tasks.id", ondelete="SET NULL"),
         nullable=True,
     )
-    # категория объекта: PROJECT, MEMBER, TASK, COMMENT, ATTACHMENT, LABEL
     entity_type: Mapped[str] = mapped_column(String(32), nullable=False)
-    # код события: CREATED, UPDATED, STATUS_CHANGED, ASSIGNED, DELETED, UPLOADED, ROLE_CHANGED и т.д.
     action: Mapped[str] = mapped_column(String(48), nullable=False)
-    # готовая человекочитаемая строка события для отображения в журнале логов
     summary: Mapped[str] = mapped_column(Text, nullable=False)
-    # дополнительные детали изменения (например, «Старый статус → Новый статус»)
     details: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=utc_now, nullable=False
@@ -429,4 +426,48 @@ class ActivityLog(Base):
 
     project: Mapped["Project"] = relationship(back_populates="activity_logs")
     actor: Mapped[Optional["User"]] = relationship(foreign_keys=[actor_id])
+    task: Mapped[Optional["Task"]] = relationship(foreign_keys=[task_id])
+
+
+# !! Добавлена новая таблица notifications для внутренних уведомлений пользователя на сайте (Этап 12)
+# Типы уведомлений (kind):
+# - TASK_ASSIGNED: пользователю назначена новая задача
+# - DEADLINE_3D: напоминание за 3 дня до окончания дедлайна по задаче
+# - DEADLINE_1D: напоминание за 1 день до окончания дедлайна по задаче
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    project_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    task_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("tasks.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    # категория уведомления: TASK_ASSIGNED, DEADLINE_3D, DEADLINE_1D
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    # уникальный ключ дедупликации (например, deadline_3d:<task_id>:<YYYY-MM-DD>), чтобы не дублировать напоминания
+    dedup_key: Mapped[Optional[str]] = mapped_column(
+        String(160), unique=True, nullable=True
+    )
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=utc_now, nullable=False
+    )
+
+    user: Mapped["User"] = relationship(back_populates="notifications")
+    project: Mapped[Optional["Project"]] = relationship(foreign_keys=[project_id])
     task: Mapped[Optional["Task"]] = relationship(foreign_keys=[task_id])
